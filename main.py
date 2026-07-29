@@ -1,19 +1,11 @@
-import yfinance as yf  
+import yfinance as yf
 
 def get_stock_data(ticker, period="6mo"):
     data = yf.download(ticker, period=period)
     return data
-ticker_input = input("Enter the stock ticker symbol: ")
-stock_data = get_stock_data(ticker_input)
-print(stock_data)
-
 
 def calculate_moving_average(data, window=20):
     return data['Close'].rolling(window=window).mean()
-print("Calculating moving average...")
-print(calculate_moving_average(stock_data, window=20))
-print(calculate_moving_average(stock_data, window=50))
-
 
 def calculate_rsi(data, window=14):
     delta = data['Close'].diff()
@@ -29,6 +21,44 @@ def calculate_rsi(data, window=14):
 # RSI below 30 → "oversold" stock (fell too fast, might be undervalued, possible buying opportunity)
 # Between 30 and 70 → neutral territory
 
+def get_latest_values(stock_data, ma20, ma50, rsi):
+    latest_price = stock_data['Close'].iloc[-1].iloc[0]
+    latest_ma20 = ma20.iloc[-1].iloc[0]
+    latest_ma50 = ma50.iloc[-1].iloc[0]
+    latest_rsi = rsi.iloc[-1].iloc[0]
+    return {
+        "latest_price": latest_price,
+        "latest_ma20": latest_ma20,
+        "latest_ma50": latest_ma50,
+        "latest_rsi": latest_rsi
+    }
+
+ticker_input = input("Enter the stock ticker symbol: ")
+stock_data = get_stock_data(ticker_input)
+print(stock_data)
+
+print("Calculating moving average...")
+ma20 = calculate_moving_average(stock_data, window=20)
+ma50 = calculate_moving_average(stock_data, window=50)
+print(ma20)
+print(ma50)
+
 print("Calculating RSI...")
 rsi = calculate_rsi(stock_data)
 print(rsi)
+
+results = get_latest_values(stock_data, ma20, ma50, rsi)
+
+print()
+print("=" * 32)
+print("       LATEST ANALYSIS")
+print("=" * 32)
+print()
+print(f"Ticker: {ticker_input}")
+print()
+print(f"Latest Price: $ {results['latest_price']:.2f}")
+print(f"Moving Average (20): $ {results['latest_ma20']:.2f}")
+print(f"Moving Average (50): $ {results['latest_ma50']:.2f}")
+print(f"RSI (14): {results['latest_rsi']:.2f}")
+print()
+print("=" * 32)
