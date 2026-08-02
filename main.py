@@ -21,16 +21,27 @@ def calculate_rsi(data, window=14):
 # RSI below 30 → "oversold" stock (fell too fast, might be undervalued, possible buying opportunity)
 # Between 30 and 70 → neutral territory
 
-def get_latest_values(stock_data, ma20, ma50, rsi):
+def calculate_macd(data, short_window=12, long_window=26, signal_window=9):
+    short_ma = data['Close'].ewm(span=short_window, adjust=False).mean()
+    long_ma = data['Close'].ewm(span=long_window, adjust=False).mean()
+    macd = short_ma - long_ma
+    signal = macd.ewm(span=signal_window, adjust=False).mean()
+    return macd, signal
+
+def get_latest_values(stock_data, ma20, ma50, rsi, macd, signal):
     latest_price = stock_data['Close'].iloc[-1].iloc[0]
     latest_ma20 = ma20.iloc[-1].iloc[0]
     latest_ma50 = ma50.iloc[-1].iloc[0]
     latest_rsi = rsi.iloc[-1].iloc[0]
+    latest_macd = macd.iloc[-1].iloc[0]
+    latest_signal = signal.iloc[-1].iloc[0]
     return {
         "latest_price": latest_price,
         "latest_ma20": latest_ma20,
         "latest_ma50": latest_ma50,
-        "latest_rsi": latest_rsi
+        "latest_rsi": latest_rsi,
+        "latest_macd": latest_macd,
+        "latest_signal": latest_signal
     }
 
 def main():
@@ -48,7 +59,9 @@ def main():
     rsi = calculate_rsi(stock_data)
     print(rsi)
 
-    results = get_latest_values(stock_data, ma20, ma50, rsi)
+    
+    macd, signal = calculate_macd(stock_data)
+    results = get_latest_values(stock_data, ma20, ma50, rsi, macd, signal)
 
     print()
     print("=" * 32)
@@ -61,8 +74,11 @@ def main():
     print(f"Moving Average (20): $ {results['latest_ma20']:.2f}")
     print(f"Moving Average (50): $ {results['latest_ma50']:.2f}")
     print(f"RSI (14): {results['latest_rsi']:.2f}")
+    print(f"MACD: {results['latest_macd']:.2f}")
+    print(f"Signal: {results['latest_signal']:.2f}")
     print()
     print("=" * 32)
 
 if __name__ == "__main__":
     main()
+
