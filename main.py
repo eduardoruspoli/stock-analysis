@@ -1,11 +1,14 @@
 import yfinance as yf
 
+
 def get_stock_data(ticker, period="6mo"):
     data = yf.download(ticker, period=period)
     return data
 
+
 def calculate_moving_average(data, window=20):
     return data['Close'].rolling(window=window).mean()
+
 
 def calculate_rsi(data, window=14):
     delta = data['Close'].diff()
@@ -28,6 +31,24 @@ def calculate_macd(data, short_window=12, long_window=26, signal_window=9):
     signal = macd.ewm(span=signal_window, adjust=False).mean()
     return macd, signal
 
+
+def get_fundamentals(ticker):
+    stock = yf.Ticker(ticker)
+    info = stock.info
+    pe_ratio = info.get('trailingPE', 'N/A')
+    roe = info.get('returnOnEquity', 'N/A')
+    debt_to_equity = info.get('debtToEquity', 'N/A')
+    market_cap = info.get('marketCap', 'N/A')
+    dividend_yield = info.get('dividendYield', 'N/A')
+    return {
+        "pe_ratio": pe_ratio,
+        "roe": roe,
+        "debt_to_equity": debt_to_equity,
+        "market_cap": market_cap,
+        "dividend_yield": dividend_yield
+    }
+
+
 def get_latest_values(stock_data, ma20, ma50, rsi, macd, signal):
     latest_price = stock_data['Close'].iloc[-1].iloc[0]
     latest_ma20 = ma20.iloc[-1].iloc[0]
@@ -44,6 +65,8 @@ def get_latest_values(stock_data, ma20, ma50, rsi, macd, signal):
         "latest_signal": latest_signal
     }
 
+
+
 def main():
     ticker_input = input("Enter the stock ticker symbol: ")
     stock_data = get_stock_data(ticker_input)
@@ -59,10 +82,15 @@ def main():
     rsi = calculate_rsi(stock_data)
     print(rsi)
 
-    
+    print("Fetching fundamental data...")
+    fundamentals = get_fundamentals(ticker_input)
+    print(fundamentals)
+
+
     macd, signal = calculate_macd(stock_data)
     results = get_latest_values(stock_data, ma20, ma50, rsi, macd, signal)
-
+    results.update(fundamentals)
+    
     print()
     print("=" * 32)
     print("       LATEST ANALYSIS")
@@ -76,6 +104,10 @@ def main():
     print(f"RSI (14): {results['latest_rsi']:.2f}")
     print(f"MACD: {results['latest_macd']:.2f}")
     print(f"Signal: {results['latest_signal']:.2f}")
+    print(f"P/L: {results['pe_ratio']}")
+    print(f"ROE: {results['roe']}")
+    print(f"Debt/Equity: {results['debt_to_equity']}")
+    print(f"Dividend Yield: {results['dividend_yield']}")
     print()
     print("=" * 32)
 
