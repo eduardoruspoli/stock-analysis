@@ -1,4 +1,8 @@
 import yfinance as yf
+from nltk.sentiment import SentimentIntensityAnalyzer
+
+analyzer = SentimentIntensityAnalyzer()
+
 
 
 def get_stock_data(ticker, period="6mo"):
@@ -49,6 +53,36 @@ def get_fundamentals(ticker):
     }
 
 
+def get_news(ticker, max_results=5):
+    stock = yf.Ticker(ticker)
+    news = stock.news
+    return news[:max_results]
+
+
+def analyze_sentiment(news):
+    sentiments = []
+    for article in news:
+        content_data = article.get('content', {})
+        title = content_data.get('title', '')
+        description = content_data.get('summary', '')
+        content = f"{title} {description}"
+        score = analyzer.polarity_scores(content)
+        sentiments.append({
+            "title": title,
+            "description": description,
+            "sentiment_score": score
+        })
+    return sentiments
+
+
+def get_average_sentiment(sentiments):
+    if not sentiments:
+        return 0.0
+    total_score = sum(item['sentiment_score']['compound'] for item in sentiments)
+    average_score = total_score / len(sentiments)
+    return average_score
+
+
 def get_latest_values(stock_data, ma20, ma50, rsi, macd, signal):
     latest_price = stock_data['Close'].iloc[-1].iloc[0]
     latest_ma20 = ma20.iloc[-1].iloc[0]
@@ -70,26 +104,23 @@ def get_latest_values(stock_data, ma20, ma50, rsi, macd, signal):
 def main():
     ticker_input = input("Enter the stock ticker symbol: ")
     stock_data = get_stock_data(ticker_input)
-    print(stock_data)
 
     print("Calculating moving average...")
     ma20 = calculate_moving_average(stock_data, window=20)
     ma50 = calculate_moving_average(stock_data, window=50)
-    print(ma20)
-    print(ma50)
 
     print("Calculating RSI...")
-    rsi = calculate_rsi(stock_data)
-    print(rsi)
+    rsi = calculate_rsi(stock_data)  
 
     print("Fetching fundamental data...")
-    fundamentals = get_fundamentals(ticker_input)
-    print(fundamentals)
-
+    fundamentals = get_fundamentals(ticker_input)  
 
     macd, signal = calculate_macd(stock_data)
     results = get_latest_values(stock_data, ma20, ma50, rsi, macd, signal)
     results.update(fundamentals)
+    news = get_news(ticker_input)
+    sentiments = analyze_sentiment(news)
+    average_sentiment = get_average_sentiment(sentiments)
     
     print()
     print("=" * 32)
@@ -108,6 +139,7 @@ def main():
     print(f"ROE: {results['roe']}")
     print(f"Debt/Equity: {results['debt_to_equity']}")
     print(f"Dividend Yield: {results['dividend_yield']}")
+    print(f"Average Sentiment: {average_sentiment:.2f}")
     print()
     print("=" * 32)
 
