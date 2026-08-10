@@ -100,6 +100,43 @@ def get_latest_values(stock_data, ma20, ma50, rsi, macd, signal):
     }
 
 
+def calculate_score(results,average_sentiment):
+    score = 0
+    if results['latest_price'] > results['latest_ma20']:
+        score += 1
+    if results['latest_price'] > results['latest_ma50']:
+        score += 1
+    if results['latest_rsi'] < 30:
+        score += 1
+    elif results['latest_rsi'] > 70:
+        score -= 1
+    if results['pe_ratio'] < 15:
+        score += 1
+    elif results['pe_ratio'] > 25:
+        score -= 1
+    if results['latest_macd'] > results['latest_signal']:
+        score += 1
+    else:
+        score -= 1
+    if average_sentiment > 0:
+        score += 1
+    elif average_sentiment < 0:
+        score -= 1
+    return score
+
+
+def get_recommendation(score):
+    if score >= 4:
+        return "Strong Buy"
+    elif score >= 2:
+        return "Buy"
+    elif score >= -1:
+        return "Hold"
+    elif score >= -3:
+        return "Sell"
+    else:
+        return "Strong Sell"
+
 
 def main():
     ticker_input = input("Enter the stock ticker symbol: ")
@@ -121,7 +158,8 @@ def main():
     news = get_news(ticker_input)
     sentiments = analyze_sentiment(news)
     average_sentiment = get_average_sentiment(sentiments)
-    
+    score = calculate_score(results, average_sentiment)
+
     print()
     print("=" * 32)
     print("       LATEST ANALYSIS")
@@ -142,7 +180,8 @@ def main():
     print(f"Average Sentiment: {average_sentiment:.2f}")
     print()
     print("=" * 32)
-
+    print(f"Final Score: {score}")
+    print(f"Recommendation: {get_recommendation(score)}")
 if __name__ == "__main__":
     main()
 
