@@ -110,10 +110,11 @@ def calculate_score(results,average_sentiment):
         score += 1
     elif results['latest_rsi'] > 70:
         score -= 1
-    if results['pe_ratio'] < 15:
-        score += 1
-    elif results['pe_ratio'] > 25:
-        score -= 1
+    if isinstance(results['pe_ratio'], (int, float)):
+        if results['pe_ratio'] < 15:
+            score += 1
+        elif results['pe_ratio'] > 25:
+            score -= 1
     if results['latest_macd'] > results['latest_signal']:
         score += 1
     else:
