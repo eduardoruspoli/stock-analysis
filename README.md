@@ -76,12 +76,24 @@ Cada um dos seguintes critérios soma ou subtrai pontos de um score:
 | Preço vs Média Móvel (20 e 50) | Preço acima da média | +1 cada |
 | RSI | < 30 (sobrevendida) / > 70 (sobrecomprada) | +1 / -1 |
 | P/L | < 15 (barata) / > 25 (cara) | +1 / -1 |
+| Dívida/Patrimônio | < 50 (saudável) / > 100 (alavancagem alta) | +1 / -1 |
 | MACD vs Signal | MACD acima / abaixo da Signal | +1 / -1 |
 | Sentimento médio das notícias | positivo / negativo | +1 / -1 |
 
 O score final é traduzido em uma recomendação: **Strong Buy**, **Buy**, **Hold**, **Sell** ou **Strong Sell**.
 
 > Esse sistema é uma simplificação didática para fins de estudo e portfólio — não deve ser usado como única base para decisões reais de investimento.
+
+### ⚠️ Limitações conhecidas
+
+Nenhum sistema de pontuação simples como este substitui o julgamento de um analista humano. Alguns exemplos concretos encontrados durante os testes:
+
+- **P/L muito baixo nem sempre significa "barata"** — pode ser resultado de um lucro atípico/não recorrente em um único trimestre, distorcendo o indicador. O sistema atual não diferencia lucro recorrente de eventos pontuais.
+- **O motor não tem memória de contexto histórico** — não sabe se a empresa já passou por crises recentes, mudanças de gestão ou eventos relevantes que um investidor experiente levaria em conta.
+- **VADER (análise de sentimento) foi treinado em linguagem coloquial**, não em jargão financeiro — títulos como "Earnings Call Highlights" podem ser classificados incorretamente como neutros ou negativos, mesmo quando o conteúdo é positivo.
+- **Os critérios e faixas de pontuação são arbitrários** (definidos por mim, com base em regras gerais de mercado) — não são validados estatisticamente contra desempenho histórico real.
+
+Por isso, a recomendação gerada deve ser tratada como um **ponto de partida para investigação**, não como uma conclusão definitiva.
 
 ## 📚 Motivação
 
