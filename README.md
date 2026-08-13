@@ -30,11 +30,11 @@ O usuário informa o ticker de uma ação (ex: `AAPL`, `PETR4.SA`) e o programa 
 
 ## 🚧 Roadmap (próximas etapas)
 
-- [ ] Tratamento de dados ausentes (ex: `pe_ratio` indisponível para alguns tickers)
-- [ ] Testes com maior variedade de tickers (B3 e mercado americano)
+- [x] Tratamento de dados ausentes (ex: `pe_ratio` e `debt_to_equity` indisponíveis para alguns tickers)
+- [x] Testes com maior variedade de tickers (B3 e mercado americano)
+- [ ] Interface web com [Streamlit](https://streamlit.io/) — em construção (`app.py`), incluindo gráfico de preço interativo
 - [ ] Melhorar a formatação e explicação da recomendação final (justificativa por indicador)
 - [ ] Explorar alternativas ao VADER para textos financeiros (ex: FinBERT), já que o VADER foi treinado em linguagem coloquial e pode interpretar mal jargão de mercado
-- [ ] Interface simples (linha de comando aprimorada ou dashboard)
 
 ## 🛠️ Tecnologias
 
