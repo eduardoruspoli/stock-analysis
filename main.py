@@ -115,6 +115,11 @@ def calculate_score(results,average_sentiment):
             score += 1
         elif results['pe_ratio'] > 25:
             score -= 1
+    if isinstance(results['debt_to_equity'], (int, float)):
+                if results['debt_to_equity'] < 50:
+                    score += 1
+                elif results['debt_to_equity'] > 100:
+                    score -= 1        
     if results['latest_macd'] > results['latest_signal']:
         score += 1
     else:
@@ -124,7 +129,7 @@ def calculate_score(results,average_sentiment):
     elif average_sentiment < 0:
         score -= 1
     return score
-
+    
 
 def get_recommendation(score):
     if score >= 4:
