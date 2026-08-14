@@ -1,104 +1,122 @@
 # 📈 Stock Analysis
 
-Ferramenta em Python que analisa ações da bolsa de valores combinando **análise técnica**, **análise fundamentalista** e **sentimento de notícias**, com o objetivo de apoiar a decisão de compra, venda ou espera sobre um ativo.
+A Python tool that analyzes stocks by combining **technical analysis**, **fundamental analysis**, and **news sentiment**, aiming to support buy/sell/hold decisions on a given asset.
 
-O usuário informa o ticker de uma ação (ex: `AAPL`, `PETR4.SA`) e o programa coleta os dados, calcula os indicadores relevantes, e apresenta um relatório consolidado com uma recomendação (Strong Buy, Buy, Hold, Sell ou Strong Sell) baseada em um sistema de pontuação.
+The user enters a stock ticker (e.g. `AAPL`, `PETR4.SA`), and the program collects the data, calculates the relevant indicators, and presents a consolidated report with a recommendation (Strong Buy, Buy, Hold, Sell, or Strong Sell) based on a scoring system.
 
-> 🚧 **Status: projeto em desenvolvimento ativo.** O fluxo principal (coleta → análise → recomendação) já está funcional. Refinamentos de tratamento de erro, testes com múltiplos tickers e melhorias na interpretação de sentimento seguem em andamento.
+> 🚧 **Status: active development.** The core pipeline (data collection → analysis → recommendation) is fully functional. Error handling refinements, testing with more tickers, and sentiment analysis improvements are ongoing.
 
 ---
 
-## ✅ Funcionalidades implementadas
+## ✅ Implemented features
 
-**Análise técnica** (dados de preço via [yfinance](https://pypi.org/project/yfinance/))
-- Coleta de histórico de preços com período configurável (`1d`, `1wk`, `1mo`, `6mo`, `1y`, etc.)
-- Média Móvel (20 e 50 dias) — identifica tendências de curto e longo prazo
-- RSI (Relative Strength Index) — identifica sobrecompra/sobrevenda
-- MACD (Moving Average Convergence Divergence) — identifica momentum de alta ou baixa
+**Technical analysis** (price data via [yfinance](https://pypi.org/project/yfinance/))
+- Historical price collection with configurable period (`1d`, `1wk`, `1mo`, `6mo`, `1y`, etc.)
+- Moving Average (20 and 50 days) — identifies short- and long-term trends
+- Bollinger Bands — identifies volatility and possible price extremes
+- RSI (Relative Strength Index) — identifies overbought/oversold conditions
+- MACD (Moving Average Convergence Divergence) — identifies bullish or bearish momentum
 
-**Análise fundamentalista**
-- P/L (Preço/Lucro), ROE, Dívida/Patrimônio e Dividend Yield, extraídos via `yfinance`
+**Fundamental analysis**
+- P/E ratio, ROE, Debt/Equity, Dividend Yield, Profit Margin, Revenue Growth, Free Cash Flow, and Beta, pulled via `yfinance`
 
-**Análise de sentimento**
-- Coleta de notícias recentes sobre o ativo
-- Análise de sentimento de cada notícia com [NLTK VADER](https://www.nltk.org/api/nltk.sentiment.vader.html)
-- Cálculo de sentimento médio consolidado
+**Contextual analysis**
+- Average analyst target price, compared against the current price
 
-**Motor de decisão**
-- Sistema de pontuação que combina os 6 sinais acima (técnicos, fundamentalista e sentimento)
-- Tradução do score final em uma recomendação (Strong Buy / Buy / Hold / Sell / Strong Sell)
+**Sentiment analysis**
+- Collection of recent news about the asset
+- Sentiment analysis of each news item with [NLTK VADER](https://www.nltk.org/api/nltk.sentiment.vader.html)
+- Calculation of consolidated average sentiment
 
-## 🚧 Roadmap (próximas etapas)
+**Decision engine**
+- Scoring system that combines all the signals above (technical, fundamental, contextual, and sentiment)
+- Translation of the final score into a recommendation (Strong Buy / Buy / Hold / Sell / Strong Sell)
 
-- [x] Tratamento de dados ausentes (ex: `pe_ratio` e `debt_to_equity` indisponíveis para alguns tickers)
-- [x] Testes com maior variedade de tickers (B3 e mercado americano)
-- [ ] Interface web com [Streamlit](https://streamlit.io/) — em construção (`app.py`), incluindo gráfico de preço interativo
-- [ ] Melhorar a formatação e explicação da recomendação final (justificativa por indicador)
-- [ ] Explorar alternativas ao VADER para textos financeiros (ex: FinBERT), já que o VADER foi treinado em linguagem coloquial e pode interpretar mal jargão de mercado
+**Web interface**
+- Interactive app built with [Streamlit](https://streamlit.io/), including a price chart with moving averages and Bollinger Bands overlaid ([Plotly](https://plotly.com/python/))
 
-## 🛠️ Tecnologias
+## 🚧 Roadmap (next steps)
+
+- [x] Handling of missing data (e.g. `pe_ratio` and `debt_to_equity` unavailable for some tickers)
+- [x] Testing with a wider variety of tickers (B3 and US market)
+- [x] Web interface with [Streamlit](https://streamlit.io/), including an interactive price chart
+- [x] Additional indicators: Bollinger Bands, Revenue Growth, Free Cash Flow, Beta, analyst target price
+- [ ] Compare P/E and other multiples against the sector/index average
+- [ ] Improve the formatting and explanation of the final recommendation (per-indicator justification)
+- [ ] Explore alternatives to VADER for financial text (e.g. FinBERT), since VADER was trained on colloquial language and can misjudge market jargon
+
+## 🛠️ Tech stack
 
 - **Python 3.14**
-- [yfinance](https://pypi.org/project/yfinance/) — coleta de dados de mercado (preço, fundamentos, notícias)
-- [pandas](https://pandas.pydata.org/) — manipulação e análise de séries históricas
-- [NLTK (VADER)](https://www.nltk.org/) — análise de sentimento de notícias
+- [yfinance](https://pypi.org/project/yfinance/) — market data collection (price, fundamentals, news)
+- [pandas](https://pandas.pydata.org/) — historical series manipulation and analysis
+- [NLTK (VADER)](https://www.nltk.org/) — news sentiment analysis
+- [Streamlit](https://streamlit.io/) — interactive web interface
+- [Plotly](https://plotly.com/python/) — interactive price chart
 
-## 🚀 Como rodar o projeto
+## 🚀 Running the project
 
 ```bash
-# Clone o repositório
+# Clone the repository
 git clone https://github.com/eduardoruspoli/stock-analysis.git
 cd stock-analysis
 
-# Crie e ative um ambiente virtual
+# Create and activate a virtual environment
 python -m venv venv
 venv\Scripts\activate      # Windows
 source venv/bin/activate   # Mac/Linux
 
-# Instale as dependências
+# Install dependencies
 pip install -r requirements.txt
 
-# Baixe os dados necessários do NLTK (rodar uma única vez)
+# Download the required NLTK data (run once)
 python -c "import nltk; nltk.download('vader_lexicon')"
 
-# Execute
+# Run the command-line version
 python main.py
+
+# Or run the web version (interactive, with chart)
+streamlit run app.py
 ```
 
-Ao rodar, o programa vai pedir o ticker da ação que você deseja analisar (ex: `PETR4.SA` para ações brasileiras, `AAPL` para ações americanas), e devolver um relatório com todos os indicadores e a recomendação final.
+In the command-line version, the program prompts for the stock ticker in the terminal. In the web version, a text field on the page lets you type in the ticker (e.g. `PETR4.SA` for Brazilian stocks, `AAPL` for US stocks) and click "Analyze" to see the full report, including the price chart with moving averages and Bollinger Bands.
 
-## 🧠 Como funciona a recomendação
+## 🧠 How the recommendation works
 
-Cada um dos seguintes critérios soma ou subtrai pontos de um score:
+Each of the following criteria adds or subtracts points from a score:
 
-| Critério | Condição | Pontos |
+| Criterion | Condition | Points |
 |---|---|---|
-| Preço vs Média Móvel (20 e 50) | Preço acima da média | +1 cada |
-| RSI | < 30 (sobrevendida) / > 70 (sobrecomprada) | +1 / -1 |
-| P/L | < 15 (barata) / > 25 (cara) | +1 / -1 |
-| Dívida/Patrimônio | < 50 (saudável) / > 100 (alavancagem alta) | +1 / -1 |
-| MACD vs Signal | MACD acima / abaixo da Signal | +1 / -1 |
-| Sentimento médio das notícias | positivo / negativo | +1 / -1 |
+| Price vs Moving Average (20 and 50) | Price above the average | +1 each |
+| RSI | < 30 (oversold) / > 70 (overbought) | +1 / -1 |
+| Bollinger Bands | price below lower band / above upper band | +1 / -1 |
+| P/E Ratio | < 15 (cheap) / > 25 (expensive) | +1 / -1 |
+| Debt/Equity | < 50 (healthy) / > 100 (highly leveraged) | +1 / -1 |
+| Revenue Growth | > 10% / negative | +1 / -1 |
+| Free Cash Flow | positive / negative | +1 / -1 |
+| Analyst target price | upside > 10% / downside > 10% | +1 / -1 |
+| MACD vs Signal | MACD above / below Signal | +1 / -1 |
+| Average news sentiment | positive / negative | +1 / -1 |
 
-O score final é traduzido em uma recomendação: **Strong Buy**, **Buy**, **Hold**, **Sell** ou **Strong Sell**.
+The final score is translated into a recommendation: **Strong Buy**, **Buy**, **Hold**, **Sell**, or **Strong Sell**.
 
-> Esse sistema é uma simplificação didática para fins de estudo e portfólio — não deve ser usado como única base para decisões reais de investimento.
+> This scoring system is a didactic simplification for study and portfolio purposes — it should not be used as the sole basis for real investment decisions.
 
-### ⚠️ Limitações conhecidas
+### ⚠️ Known limitations
 
-Nenhum sistema de pontuação simples como este substitui o julgamento de um analista humano. Alguns exemplos concretos encontrados durante os testes:
+No simple scoring system like this one replaces the judgment of a human analyst. Some concrete examples found during testing:
 
-- **P/L muito baixo nem sempre significa "barata"** — pode ser resultado de um lucro atípico/não recorrente em um único trimestre, distorcendo o indicador. O sistema atual não diferencia lucro recorrente de eventos pontuais.
-- **O motor não tem memória de contexto histórico** — não sabe se a empresa já passou por crises recentes, mudanças de gestão ou eventos relevantes que um investidor experiente levaria em conta.
-- **VADER (análise de sentimento) foi treinado em linguagem coloquial**, não em jargão financeiro — títulos como "Earnings Call Highlights" podem ser classificados incorretamente como neutros ou negativos, mesmo quando o conteúdo é positivo.
-- **Os critérios e faixas de pontuação são arbitrários** (definidos por mim, com base em regras gerais de mercado) — não são validados estatisticamente contra desempenho histórico real.
+- **A very low P/E doesn't always mean "cheap"** — it can be the result of an atypical, non-recurring profit in a single quarter, distorting the indicator. The current system doesn't distinguish recurring earnings from one-off events.
+- **The engine has no historical context** — it doesn't know whether the company has recently gone through crises, management changes, or other relevant events that an experienced investor would factor in.
+- **VADER (sentiment analysis) was trained on colloquial language**, not financial jargon — headlines like "Earnings Call Highlights" can be incorrectly classified as neutral or negative even when the underlying content is positive.
+- **The criteria and score thresholds are arbitrary** (defined by me, based on general market rules) — they are not statistically validated against real historical performance.
 
-Por isso, a recomendação gerada deve ser tratada como um **ponto de partida para investigação**, não como uma conclusão definitiva.
+For this reason, the generated recommendation should be treated as a **starting point for further research**, not as a definitive conclusion.
 
-## 📚 Motivação
+## 📚 Motivation
 
-Este projeto foi criado como forma de praticar Python aplicado a um problema real, unindo lógica de programação, manipulação de dados financeiros e conceitos de análise de investimentos, como parte de uma transição de carreira da área de Administração para Tecnologia.
+This project was created as a way to practice Python applied to a real-world problem, combining programming logic, financial data handling, and investment analysis concepts, as part of a career transition from Business Administration to Technology.
 
-## 📄 Licença
+## 📄 License
 
-Este projeto está sob a licença MIT — sinta-se livre para usar, estudar e adaptar.
+This project is licensed under the MIT License — feel free to use, study, and adapt it.
