@@ -13,6 +13,14 @@ def calculate_moving_average(data, window=20):
     return data['Close'].rolling(window=window).mean()
 
 
+def get_price_change(stock_data):
+    latest_close = stock_data['Close'].iloc[-1].iloc[0]
+    previous_close = stock_data['Close'].iloc[-2].iloc[0]
+    change = latest_close - previous_close
+    change_pct = (change / previous_close) * 100
+    return latest_close, change, change_pct
+
+
 def calculate_bollinger_bands(data, window=20, num_std=2):
     ma = data['Close'].rolling(window=window).mean()
     std = data['Close'].rolling(window=window).std()
