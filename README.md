@@ -1,5 +1,7 @@
 # 📈 Stock Analysis
 
+[🇧🇷 Português](README.pt-BR.md) | 🇺🇸 English
+
 A Python tool that analyzes stocks by combining **technical analysis**, **fundamental analysis**, and **news sentiment**, aiming to support buy/sell/hold decisions on a given asset.
 
 The user enters a stock ticker (e.g. `AAPL`, `PETR4.SA`), and the program collects the data, calculates the relevant indicators, and presents a consolidated report with a recommendation (Strong Buy, Buy, Hold, Sell, or Strong Sell) based on a scoring system.
@@ -35,12 +37,26 @@ The user enters a stock ticker (e.g. `AAPL`, `PETR4.SA`), and the program collec
 **Web interface**
 - Interactive app built with [Streamlit](https://streamlit.io/), including a price chart with moving averages and Bollinger Bands overlaid ([Plotly](https://plotly.com/python/))
 
+## 🖥️ Dashboard and watchlist
+
+- **Personal watchlist:** add or remove symbols, and open each stock’s detailed analysis from its card.
+- **Portfolio overview:** see latest available close, daily price movement and a rule-based classification.
+- **Interactive charts:** closing prices, 20/50-period moving averages and Bollinger Bands in Plotly.
+- **Usability:** dark theme, responsive Streamlit layout, and analysis caching for 10 minutes.
+- **Local storage:** the app writes watchlist entries to `watchlist.json`, intentionally ignored by Git.
+- **Two entry points:** `python main.py` for CLI and `streamlit run app.py` for the web dashboard.
+
+> Market data from yfinance can be delayed. Figures reflect each ticker's native trading currency, even though the interface currently uses a generic `$` label. The classification is a didactic rules-based signal, **not investment advice**.
+
+On Windows, after installing dependencies in the `venv` environment, you can also use `Stock Analysis.bat` to launch the app.
+
 ## 🚧 Roadmap (next steps)
 
 - [x] Handling of missing data (e.g. `pe_ratio` and `debt_to_equity` unavailable for some tickers)
 - [x] Testing with a wider variety of tickers (B3 and US market)
 - [x] Web interface with [Streamlit](https://streamlit.io/), including an interactive price chart
 - [x] Additional indicators: Bollinger Bands, Revenue Growth, Free Cash Flow, Beta, analyst target price
+- [ ] Add automated tests, better validation of invalid tickers, and clear API error messages
 - [ ] Compare P/E and other multiples against the sector/index average
 - [ ] Improve the formatting and explanation of the final recommendation (per-indicator justification)
 - [ ] Explore alternatives to VADER for financial text (e.g. FinBERT), since VADER was trained on colloquial language and can misjudge market jargon
@@ -119,4 +135,4 @@ This project was created as a way to practice Python applied to a real-world pro
 
 ## 📄 License
 
-This project is licensed under the MIT License — feel free to use, study, and adapt it.
+Check for a LICENSE file in the repository before assuming redistribution terms.

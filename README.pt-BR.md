@@ -37,12 +37,26 @@ O usuário informa o ticker de uma ação (ex: `AAPL`, `PETR4.SA`) e o programa 
 **Interface web**
 - Aplicação interativa com [Streamlit](https://streamlit.io/), incluindo gráfico de preço com médias móveis e Bandas de Bollinger sobrepostas ([Plotly](https://plotly.com/python/))
 
+## 🖥️ Dashboard e watchlist
+
+- **Lista de acompanhamento:** adicione ou remova tickers e abra a análise detalhada de cada ativo pelo cartão.
+- **Visão geral:** confira o último fechamento disponível, a variação diária e uma classificação calculada por regras.
+- **Gráficos interativos:** fechamento, médias móveis de 20/50 períodos e Bandas de Bollinger via Plotly.
+- **Experiência:** tema escuro, layout adaptável em Streamlit e cache das análises por 10 minutos.
+- **Persistência local:** os ativos são salvos em `watchlist.json`, ignorado pelo Git.
+- **Duas formas de uso:** `python main.py` no terminal e `streamlit run app.py` na web.
+
+> Os dados de mercado via yfinance podem apresentar atraso. Os valores seguem a moeda original de negociação de cada ticker, embora a interface use atualmente o símbolo genérico `$`. A classificação é um sinal didático gerado por regras, **não uma recomendação de investimento**.
+
+No Windows, depois de instalar as dependências no ambiente `venv`, também é possível iniciar o aplicativo por `Stock Analysis.bat`.
+
 ## 🚧 Roadmap (próximas etapas)
 
 - [x] Tratamento de dados ausentes (ex: `pe_ratio` e `debt_to_equity` indisponíveis para alguns tickers)
 - [x] Testes com maior variedade de tickers (B3 e mercado americano)
 - [x] Interface web com [Streamlit](https://streamlit.io/), incluindo gráfico de preço interativo
 - [x] Indicadores adicionais: Bandas de Bollinger, Revenue Growth, Free Cash Flow, Beta, preço-alvo de analistas
+- [ ] Criar testes automatizados, validar tickers inválidos e melhorar as mensagens de erro da API
 - [ ] Comparação do P/L e outros múltiplos com a média do setor/índice
 - [ ] Melhorar a formatação e explicação da recomendação final (justificativa por indicador)
 - [ ] Explorar alternativas ao VADER para textos financeiros (ex: FinBERT), já que o VADER foi treinado em linguagem coloquial e pode interpretar mal jargão de mercado
@@ -121,4 +135,4 @@ Este projeto foi criado como forma de praticar Python aplicado a um problema rea
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT — sinta-se livre para usar, estudar e adaptar.
+Consulte o arquivo LICENSE no repositório antes de assumir permissões de reutilização e redistribuição.
