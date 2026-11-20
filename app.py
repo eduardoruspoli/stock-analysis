@@ -326,6 +326,14 @@ def market_label(ticker):
     return "B3" if is_brazilian_ticker(ticker) else "GLOBAL"
 
 
+def format_metric(value, prefix="", suffix="", decimals=2):
+    if value is None or value == "N/A":
+        return "N/A"
+    if isinstance(value, (int, float)):
+        return f"{prefix}{value:.{decimals}f}{suffix}"
+    return str(value)
+
+
 def badge_class(recommendation):
     if recommendation in ("Strong Buy", "Buy"):
         return "badge-buy"
@@ -594,15 +602,15 @@ def render_detail(ticker):
     with col2:
         st.markdown('<div class="section-title">Fundamentals & Sentiment</div>', unsafe_allow_html=True)
         rows = [
-            ("P/E Ratio", results["pe_ratio"]),
-            ("ROE", results["roe"]),
-            ("Debt/Equity", results["debt_to_equity"]),
-            ("Dividend Yield", results["dividend_yield"]),
-            ("Profit Margin", results["profit_margin"]),
-            ("Revenue Growth", results["revenue_growth"]),
-            ("Free Cash Flow", results["free_cash_flow"]),
-            ("Beta", results["beta"]),
-            ("Analyst Target Price", results["target_mean_price"]),
+            ("P/E Ratio", format_metric(results["pe_ratio"])),
+            ("ROE", format_metric(results["roe"])),
+            ("Debt/Equity", format_metric(results["debt_to_equity"])),
+            ("Dividend Yield", format_metric(results["dividend_yield"])),
+            ("Profit Margin", format_metric(results["profit_margin"])),
+            ("Revenue Growth", format_metric(results["revenue_growth"])),
+            ("Free Cash Flow", format_metric(results["free_cash_flow"])),
+            ("Beta", format_metric(results["beta"])),
+            ("Analyst Target Price", format_metric(results["target_mean_price"], prefix=f"{symbol} ")),
             ("Average Sentiment", f"{average_sentiment:.2f}"),
         ]
         for label, value in rows:
