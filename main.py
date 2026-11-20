@@ -1,11 +1,27 @@
+import re
+
 import yfinance as yf
 from nltk.sentiment import SentimentIntensityAnalyzer
 
 analyzer = SentimentIntensityAnalyzer()
 
 
+def normalize_ticker(ticker):
+    # Brazilian (B3) tickers look like VAMO3, PETR4, BOVA11 and need the ".SA" suffix on Yahoo Finance
+    ticker = ticker.strip().upper()
+    if re.fullmatch(r"[A-Z][A-Z0-9]{3}\d{1,2}", ticker):
+        return f"{ticker}.SA"
+    return ticker
+
+
 def get_stock_data(ticker, period="6mo"):
     data = yf.download(ticker, period=period)
+    if data.empty:
+        raise ValueError(
+            f"No price data found for '{ticker}'. "
+            "Check the ticker symbol (Brazilian stocks need the .SA suffix, e.g. PETR4.SA). "
+            "If the ticker is correct, Yahoo Finance may be temporarily limiting requests: wait a few minutes and try again."
+        )
     return data
 
 
@@ -205,8 +221,12 @@ def get_recommendation(score):
 
 
 def main():
-    ticker_input = input("Enter the stock ticker symbol: ")
-    stock_data = get_stock_data(ticker_input)
+    ticker_input = normalize_ticker(input("Enter the stock ticker symbol: "))
+    try:
+        stock_data = get_stock_data(ticker_input)
+    except ValueError as error:
+        print(error)
+        return
 
     print("Calculating moving average...")
     ma20 = calculate_moving_average(stock_data, window=20)
