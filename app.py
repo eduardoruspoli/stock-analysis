@@ -31,6 +31,10 @@ from main import (
     get_recommendation,
     get_price_change,
     normalize_ticker,
+    is_brazilian_ticker,
+    get_brapi_token,
+    get_fmp_api_key,
+    save_api_keys_to_env,
 )
 
 st.set_page_config(page_title="Stock Analysis", page_icon="📈", layout="wide")
@@ -40,7 +44,7 @@ STALE_AFTER_MINUTES = 30
 
 
 # ---------------------------------------------------------------------------
-# Database setup (+ one-time import of the old watchlist.json)
+# Database setup (+ migração de watchlist.json e normalização de sufixo .SA)
 # ---------------------------------------------------------------------------
 def migrate_legacy_watchlist():
     if not LEGACY_JSON_FILE.exists():
@@ -55,12 +59,21 @@ def migrate_legacy_watchlist():
         pass
 
 
+def normalize_existing_db_tickers():
+    for raw in get_watchlist():
+        clean = normalize_ticker(raw)
+        if clean != raw:
+            add_to_watchlist(clean)
+            remove_from_watchlist(raw)
+
+
 init_db()
 migrate_legacy_watchlist()
+normalize_existing_db_tickers()
 
 
 # ---------------------------------------------------------------------------
-# Custom CSS: dark theme with orange accents (Rico-inspired)
+# Custom CSS: dark theme with orange accents
 # ---------------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -97,8 +110,9 @@ h1, h2, h3 { color: #f0f2f5; }
 
 .card-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
+    gap: 8px;
     margin-bottom: 10px;
     padding-right: 24px;
 }
@@ -107,6 +121,16 @@ h1, h2, h3 { color: #f0f2f5; }
     font-weight: 700;
     font-size: 16px;
     color: #e6edf3;
+    letter-spacing: 0.5px;
+}
+
+.market-tag {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background-color: #21262d;
+    color: #8b949e;
     letter-spacing: 0.5px;
 }
 
@@ -212,11 +236,18 @@ def get_full_analysis(ticker):
     recommendation = get_recommendation(score)
     price, change, change_pct = get_price_change(stock_data)
     return {
-        "stock_data": stock_data, "ma20": ma20, "ma50": ma50,
-        "bollinger_upper": bollinger_upper, "bollinger_lower": bollinger_lower,
-        "results": results, "average_sentiment": average_sentiment,
-        "score": score, "recommendation": recommendation,
-        "price": price, "change": change, "change_pct": change_pct,
+        "stock_data": stock_data,
+        "ma20": ma20,
+        "ma50": ma50,
+        "bollinger_upper": bollinger_upper,
+        "bollinger_lower": bollinger_lower,
+        "results": results,
+        "average_sentiment": average_sentiment,
+        "score": score,
+        "recommendation": recommendation,
+        "price": price,
+        "change": change,
+        "change_pct": change_pct,
         "fetched_at": datetime.now().isoformat(timespec="seconds"),
     }
 
@@ -234,29 +265,65 @@ def store_snapshot(ticker, analysis):
 
 
 def refresh_tickers(tickers):
-    """Fetch fresh data one ticker at a time. Stops early after 2 failures in a row,
-    because that usually means Yahoo Finance is limiting our requests. Returns the
-    tickers that could NOT be refreshed."""
+    """Atualiza um ticker por vez sem interromper toda a carteira caso apenas um ativo falhe."""
     refreshed = []
-    consecutive_failures = 0
     for ticker in tickers:
         try:
             store_snapshot(ticker, get_full_analysis(ticker))
             refreshed.append(ticker)
-            consecutive_failures = 0
         except Exception:
-            consecutive_failures += 1
-            if consecutive_failures >= 2:
-                break
-        time.sleep(0.5)
+            pass
+        time.sleep(0.25)
     return [t for t in tickers if t not in refreshed]
+
+
+# ---------------------------------------------------------------------------
+# Sidebar: Configuração das API Keys (salva direto no .env local)
+# ---------------------------------------------------------------------------
+with st.sidebar:
+    st.subheader("🔑 API Keys")
+    st.caption("Salve suas chaves gratuitas aqui (gravadas automaticamente no `.env` local):")
+
+    current_brapi = get_brapi_token()
+    current_fmp = get_fmp_api_key()
+
+    brapi_input = st.text_input(
+        "BRAPI_TOKEN (B3)",
+        value=current_brapi,
+        type="password",
+        placeholder="Cole seu token da brapi.dev",
+    )
+    fmp_input = st.text_input(
+        "FMP_API_KEY (Global)",
+        value=current_fmp,
+        type="password",
+        placeholder="Cole sua chave da FMP",
+    )
+
+    if st.button("Salvar Chaves e Atualizar", use_container_width=True):
+        save_api_keys_to_env(brapi_token=brapi_input, fmp_api_key=fmp_input)
+        get_full_analysis.clear()
+        st.session_state.force_refresh = True
+        st.success("Chaves salvas no .env!")
+        st.rerun()
+
+    st.divider()
+    st.caption(
+        f"**Status:**\n\n"
+        f"• B3 (brapi.dev): {'✅ Configurada' if get_brapi_token() else '⚠️ Ausente'}\n\n"
+        f"• Global (FMP): {'✅ Configurada' if get_fmp_api_key() else '⚠️ Ausente'}"
+    )
 
 
 # ---------------------------------------------------------------------------
 # Small helpers
 # ---------------------------------------------------------------------------
 def currency_symbol(ticker):
-    return "R$" if ticker.endswith(".SA") else "$"
+    return "R$" if is_brazilian_ticker(ticker) else "$"
+
+
+def market_label(ticker):
+    return "B3" if is_brazilian_ticker(ticker) else "GLOBAL"
 
 
 def badge_class(recommendation):
@@ -298,11 +365,12 @@ def is_stale(snapshot):
 
 def watchlist_card_html(ticker, snapshot):
     safe_ticker = escape(ticker)
+    m_label = market_label(ticker)
     if snapshot is None:
         return (
             '<div class="stock-card">'
             '<span class="status-dot dot-none" title="No data yet"></span>'
-            f'<div class="card-header"><span class="ticker">{safe_ticker}</span></div>'
+            f'<div class="card-header"><span class="ticker">{safe_ticker}</span><span class="market-tag">{m_label}</span></div>'
             '<div class="card-footer">No data yet. Click "Refresh all".</div>'
             '</div>'
         )
@@ -313,7 +381,7 @@ def watchlist_card_html(ticker, snapshot):
     return (
         '<div class="stock-card">'
         f'<span class="status-dot {dot_class(recommendation)}" title="{escape(recommendation)}"></span>'
-        f'<div class="card-header"><span class="ticker">{safe_ticker}</span></div>'
+        f'<div class="card-header"><span class="ticker">{safe_ticker}</span><span class="market-tag">{m_label}</span></div>'
         f'<div class="price-sm">{currency_symbol(ticker)} {snapshot["price"]:.2f}</div>'
         f'<div class="change {change_css}">{arrow} {change:+.2f} ({snapshot["change_pct"]:+.2f}%)</div>'
         f'<div class="card-footer">{escape(recommendation)} · {time_ago(snapshot["updated_at"])}</div>'
@@ -373,16 +441,15 @@ def request_refresh_all():
 # ---------------------------------------------------------------------------
 st.title("📈 Stock Analysis")
 st.caption(
-    "Prices come from Yahoo Finance with a short delay. Your watchlist is saved locally and the last result of "
-    f"each stock is stored, so the page only fetches new data for stocks older than {STALE_AFTER_MINUTES} minutes "
-    "(or when you click Refresh all)."
+    "Prices come from brapi.dev (B3) and Financial Modeling Prep (Global). Your watchlist is saved locally and "
+    f"only refreshes stocks older than {STALE_AFTER_MINUTES} minutes (or when you click Refresh all)."
 )
 
 head_col1, head_col2 = st.columns([5, 1])
 with head_col1:
     st.subheader("Watchlist")
 with head_col2:
-    st.button("Refresh all", key="refresh_all", on_click=request_refresh_all, width="stretch")
+    st.button("Refresh all", key="refresh_all", on_click=request_refresh_all, use_container_width=True)
 
 add_col1, add_col2 = st.columns([3, 1])
 with add_col1:
@@ -390,16 +457,15 @@ with add_col1:
         "Add a ticker",
         key="new_ticker_input",
         label_visibility="collapsed",
-        placeholder="Add a ticker (e.g. AAPL, PETR4, VAMO3)",
+        placeholder="Add a B3 or Global ticker (e.g. PETR4, B3SA3, MXRF11, AAPL, NVDA)",
         on_change=add_from_input,
     )
 with add_col2:
-    st.button("Add", key="add_button", on_click=add_from_input, width="stretch")
+    st.button("Add", key="add_button", on_click=add_from_input, use_container_width=True)
 
 watchlist = get_watchlist()
 snapshots = get_snapshots()
 
-# Decide which tickers need fresh data (never on every click, only when really needed)
 first_run_of_session = "auto_refreshed" not in st.session_state
 st.session_state.auto_refreshed = True
 
@@ -423,8 +489,8 @@ if to_refresh:
     snapshots = get_snapshots()
     if not_refreshed:
         st.warning(
-            f"Could not refresh: {', '.join(not_refreshed)}. Yahoo Finance may be temporarily limiting requests, "
-            "so the last saved data is shown. Wait a few minutes and click Refresh all."
+            f"Could not refresh: {', '.join(not_refreshed)}. Verify BRAPI_TOKEN (for B3) or FMP_API_KEY (for Global) "
+            "in the left sidebar (API Keys), or check if the rate limit was reached."
         )
 
 if watchlist:
@@ -437,11 +503,11 @@ if watchlist:
                 st.markdown(watchlist_card_html(ticker, snapshots.get(ticker)), unsafe_allow_html=True)
                 button_col1, button_col2 = st.columns(2)
                 with button_col1:
-                    st.button("Details", key=f"details_{ticker}", on_click=show_details, args=(ticker,), width="stretch")
+                    st.button("Details", key=f"details_{ticker}", on_click=show_details, args=(ticker,), use_container_width=True)
                 with button_col2:
-                    st.button("Remove", key=f"remove_{ticker}", on_click=remove_ticker, args=(ticker,), width="stretch")
+                    st.button("Remove", key=f"remove_{ticker}", on_click=remove_ticker, args=(ticker,), use_container_width=True)
 else:
-    st.info("Your watchlist is empty. Add a ticker above to get started.")
+    st.info("Your watchlist is empty. Add a B3 or Global ticker above to get started.")
 
 st.divider()
 
@@ -453,14 +519,10 @@ def render_detail(ticker):
     except ValueError as error:
         st.error(str(error))
         return
-    except Exception:
-        st.error(
-            "Could not fetch data right now. Yahoo Finance may be temporarily limiting requests. "
-            "Please try again in a few minutes."
-        )
+    except Exception as error:
+        st.error(f"Could not fetch data right now ({error}). Please check your API keys or try again later.")
         return
 
-    # Keep the saved card in sync with what we just analyzed
     if ticker in watchlist:
         saved = snapshots.get(ticker)
         if saved is None or saved["updated_at"] != analysis["fetched_at"]:
@@ -475,6 +537,7 @@ def render_detail(ticker):
     score, recommendation = analysis["score"], analysis["recommendation"]
     change, change_pct = analysis["change"], analysis["change_pct"]
     symbol = currency_symbol(ticker)
+    m_label = market_label(ticker)
 
     change_css = "change-up" if change >= 0 else "change-down"
     arrow = "▲" if change >= 0 else "▼"
@@ -484,7 +547,8 @@ def render_detail(ticker):
         f'<span class="status-dot {dot_class(recommendation)}" title="{escape(recommendation)}"></span>'
         '<div class="card-header">'
         f'<span class="ticker" style="font-size:20px">{escape(ticker)}</span>'
-        f'<span class="badge {badge_class(recommendation)}" style="font-size:13px; padding:6px 14px; margin-right:12px;">{escape(recommendation)}</span>'
+        f'<span class="market-tag" style="font-size:11px">{m_label}</span>'
+        f'<span class="badge {badge_class(recommendation)}" style="font-size:13px; padding:6px 14px; margin-left:auto; margin-right:12px;">{escape(recommendation)}</span>'
         '</div>'
         f'<div class="price-lg">{symbol} {results["latest_price"]:.2f}</div>'
         f'<div class="change {change_css}" style="font-size:16px;">{arrow} {change:+.2f} ({change_pct:+.2f}%) today</div>'
@@ -494,21 +558,24 @@ def render_detail(ticker):
     )
 
     fig = go.Figure()
-    fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data['Close'].values.flatten(), name='Close Price', line=dict(color='#ff6a00', width=2)))
-    fig.add_trace(go.Scatter(x=ma20.index, y=ma20.values.flatten(), name='MA 20', line=dict(color='#58a6ff', dash='dot')))
-    fig.add_trace(go.Scatter(x=ma50.index, y=ma50.values.flatten(), name='MA 50', line=dict(color='#00d964', dash='dot')))
-    fig.add_trace(go.Scatter(x=bollinger_upper.index, y=bollinger_upper.values.flatten(), name='Bollinger Upper', line=dict(color='#8b949e', width=1)))
-    fig.add_trace(go.Scatter(x=bollinger_lower.index, y=bollinger_lower.values.flatten(), name='Bollinger Lower', line=dict(color='#8b949e', width=1), fill='tonexty', fillcolor='rgba(139,148,158,0.08)'))
+    fig.add_trace(go.Scatter(x=stock_data.index, y=stock_data["Close"].values.flatten(), name="Close Price", line=dict(color="#ff6a00", width=2)))
+    fig.add_trace(go.Scatter(x=ma20.index, y=ma20.values.flatten(), name="MA 20", line=dict(color="#58a6ff", dash="dot")))
+    fig.add_trace(go.Scatter(x=ma50.index, y=ma50.values.flatten(), name="MA 50", line=dict(color="#00d964", dash="dot")))
+    fig.add_trace(go.Scatter(x=bollinger_upper.index, y=bollinger_upper.values.flatten(), name="Bollinger Upper", line=dict(color="#8b949e", width=1)))
+    fig.add_trace(go.Scatter(x=bollinger_lower.index, y=bollinger_lower.values.flatten(), name="Bollinger Lower", line=dict(color="#8b949e", width=1), fill="tonexty", fillcolor="rgba(139,148,158,0.08)"))
     fig.update_layout(
         title=f"{ticker} Price Chart",
-        xaxis_title="Date", yaxis_title=f"Price ({symbol})",
-        height=480, autosize=True,
-        paper_bgcolor="#0d1117", plot_bgcolor="#0d1117",
+        xaxis_title="Date",
+        yaxis_title=f"Price ({symbol})",
+        height=480,
+        autosize=True,
+        paper_bgcolor="#0d1117",
+        plot_bgcolor="#0d1117",
         font=dict(color="#c9d1d9"),
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
         margin=dict(l=10, r=10, t=60, b=10),
     )
-    st.plotly_chart(fig, width="stretch", config={"responsive": True})
+    st.plotly_chart(fig, use_container_width=True, config={"responsive": True})
 
     col1, col2 = st.columns(2)
     with col1:
@@ -527,15 +594,15 @@ def render_detail(ticker):
     with col2:
         st.markdown('<div class="section-title">Fundamentals & Sentiment</div>', unsafe_allow_html=True)
         rows = [
-            ("P/E Ratio", results['pe_ratio']),
-            ("ROE", results['roe']),
-            ("Debt/Equity", results['debt_to_equity']),
-            ("Dividend Yield", results['dividend_yield']),
-            ("Profit Margin", results['profit_margin']),
-            ("Revenue Growth", results['revenue_growth']),
-            ("Free Cash Flow", results['free_cash_flow']),
-            ("Beta", results['beta']),
-            ("Analyst Target Price", results['target_mean_price']),
+            ("P/E Ratio", results["pe_ratio"]),
+            ("ROE", results["roe"]),
+            ("Debt/Equity", results["debt_to_equity"]),
+            ("Dividend Yield", results["dividend_yield"]),
+            ("Profit Margin", results["profit_margin"]),
+            ("Revenue Growth", results["revenue_growth"]),
+            ("Free Cash Flow", results["free_cash_flow"]),
+            ("Beta", results["beta"]),
+            ("Analyst Target Price", results["target_mean_price"]),
             ("Average Sentiment", f"{average_sentiment:.2f}"),
         ]
         for label, value in rows:
@@ -557,11 +624,11 @@ with detail_col1:
         "Ticker",
         key="detail_input",
         label_visibility="collapsed",
-        placeholder="Enter a ticker (e.g. AAPL, PETR4, VAMO3)",
+        placeholder="Enter a B3 or Global ticker (e.g. PETR4, B3SA3, AAPL, MSFT)",
         on_change=analyze_from_input,
     )
 with detail_col2:
-    st.button("Analyze", key="analyze_button", on_click=analyze_from_input, width="stretch")
+    st.button("Analyze", key="analyze_button", on_click=analyze_from_input, use_container_width=True)
 
 if st.session_state.detail_ticker:
     render_detail(st.session_state.detail_ticker)
